@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sala de Videos YouTube</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .room-info {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            color: white;
+            text-align: center;
+        }
+
+        .room-id {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .participants {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .participant {
+            background: rgba(255,255,255,0.2);
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: bold;
+        }
+
+        .video-container {
+            background: rgba(255,255,255,0.95);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .video-wrapper {
+            position: relative;
+            width: 100%;
+            height: 0;
+            padding-bottom: 56.25%; /* 16:9 aspect ratio */
+            margin-bottom: 20px;
+        }
+
+        .video-wrapper iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 10px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        input[type="text"] {
+            padding: 12px 15px;
+            border: 2px solid #ddd;
+            border-radius: 25px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.3s;
+            min-width: 300px;
+        }
+
+        input[type="text"]:focus {
+            border-color: #667eea;
+        }
+
+        button {
+            padding: 12px 25px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .chat-container {
+            background: rgba(255,255,255,0.95);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .chat-messages {
+            height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            background: #f9f9f9;
+        }
+
+        .message {
+            margin-bottom: 10px;
+            padding: 8px 12px;
+            border-radius: 15px;
+            max-width: 80%;
+        }
+
+        .message.own {
+            background: #667eea;
+            color: white;
+            margin-left: auto;
+        }
+
+        .message.other {
+            background: #e9ecef;
+            color: #333;
+        }
+
+        .message .sender {
+            font-weight: bold;
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+        }
+
+        .chat-input {
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input input {
+            flex: 1;
+        }
+
+        .status {
+            text-align: center;
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            font-weight: bold;
+        }
+
+        .status.connected {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.disconnected {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status.connecting {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+            }
+            
+            .input-group {
+                flex-direction: column;
+                width: 100%;
+            }
+            
+            input[type="text"] {
+                min-width: auto;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎬 Sala de Videos YouTube</h1>
+            <p>Comparte y sincroniza videos con otros usuarios en tiempo real</p>
+        </div>
+
+        <div class="room-info">
+            <div class="room-id">ID de Sala: <span id="roomId">Generando...</span></div>
+            <div class="participants">
+                <div class="participant">👤 Tú</div>
+                <div class="participant" id="otherParticipant">👤 Esperando...</div>
+            </div>
+        </div>
+
+        <div class="status" id="connectionStatus">Conectando...</div>
+
+        <div class="video-container">
+            <div class="video-wrapper">
+                <iframe id="youtubePlayer" 
+                        src="about:blank"
+                        frameborder="0" 
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                        allowfullscreen>
+                </iframe>
+            </div>
+            
+            <div class="controls">
+                <div class="input-group">
+                    <input type="text" id="videoUrl" placeholder="Pega aquí la URL del video de YouTube">
+                    <button onclick="loadVideo()">Cargar Video</button>
+                </div>
+                <button onclick="playVideo()">▶️ Reproducir</button>
+                <button onclick="pauseVideo()">⏸️ Pausar</button>
+                <button onclick="syncVideo()">🔄 Sincronizar</button>
+            </div>
+        </div>
+
+        <div class="chat-container">
+            <h3>💬 Chat</h3>
+            <div class="chat-messages" id="chatMessages">
+                <div class="message other">
+                    <div class="sender">Sistema</div>
+                    <div>¡Bienvenido a la sala! Comparte videos y chatea con otros usuarios.</div>
+                </div>
+            </div>
+            <div class="chat-input">
+                <input type="text" id="chatInput" placeholder="Escribe tu mensaje..." onkeypress="handleChatKeyPress(event)">
+                <button onclick="sendMessage()">Enviar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+    <script>
+        // Configuración
+        const PEER_SERVER_CONFIG = {
+            host: 'peerjs-server.herokuapp.com',
+            port: 443,
+            secure: true,
+            config: {
+                'iceServers': [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' }
+                ]
+            }
+        };
+
+        // Variables globales
+        let peer;
+        let connections = [];
+        let currentVideoId = null;
+        let isHost = false;
+        let roomId = null;
+        let player = null;
+
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', function() {
+            initializePeer();
+            setupEventListeners();
+        });
+
+        function initializePeer() {
+            // Generar ID único para la sala
+            roomId = generateRoomId();
+            document.getElementById('roomId').textContent = roomId;
+            
+            // Crear conexión PeerJS
+            peer = new Peer(roomId, PEER_SERVER_CONFIG);
+            
+            peer.on('open', function(id) {
+                console.log('Conectado con ID:', id);
+                updateConnectionStatus('Conectado', 'connected');
+            });
+
+            peer.on('connection', function(conn) {
+                console.log('Nueva conexión recibida');
+                setupConnection(conn);
+                updateParticipants();
+            });
+
+            peer.on('error', function(err) {
+                console.error('Error de PeerJS:', err);
+                updateConnectionStatus('Error de conexión', 'disconnected');
+            });
+        }
+
+        function setupConnection(conn) {
+            connections.push(conn);
+            
+            conn.on('data', function(data) {
+                handleIncomingData(data);
+            });
+
+            conn.on('close', function() {
+                console.log('Conexión cerrada');
+                connections = connections.filter(c => c !== conn);
+                updateParticipants();
+            });
+        }
+
+        function handleIncomingData(data) {
+            switch(data.type) {
+                case 'video':
+                    loadVideoFromId(data.videoId);
+                    break;
+                case 'play':
+                    playVideo();
+                    break;
+                case 'pause':
+                    pauseVideo();
+                    break;
+                case 'sync':
+                    syncVideoToTime(data.time);
+                    break;
+                case 'chat':
+                    addChatMessage(data.sender, data.message, false);
+                    break;
+            }
+        }
+
+        function setupEventListeners() {
+            // Conectar a sala existente
+            document.getElementById('videoUrl').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    loadVideo();
+                }
+            });
+        }
+
+        function generateRoomId() {
+            return 'room-' + Math.random().toString(36).substr(2, 9);
+        }
+
+        function updateConnectionStatus(message, className) {
+            const statusEl = document.getElementById('connectionStatus');
+            statusEl.textContent = message;
+            statusEl.className = 'status ' + className;
+        }
+
+        function updateParticipants() {
+            const otherParticipant = document.getElementById('otherParticipant');
+            if (connections.length > 0) {
+                otherParticipant.textContent = '👤 Conectado';
+                otherParticipant.style.color = '#28a745';
+            } else {
+                otherParticipant.textContent = '👤 Esperando...';
+                otherParticipant.style.color = '#6c757d';
+            }
+        }
+
+        function extractVideoId(url) {
+            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+            const match = url.match(regExp);
+            return (match && match[2].length === 11) ? match[2] : null;
+        }
+
+        function loadVideo() {
+            const url = document.getElementById('videoUrl').value;
+            const videoId = extractVideoId(url);
+            
+            if (!videoId) {
+                alert('Por favor, ingresa una URL válida de YouTube');
+                return;
+            }
+
+            loadVideoFromId(videoId);
+            
+            // Enviar a otros usuarios
+            sendToAll({
+                type: 'video',
+                videoId: videoId
+            });
+        }
+
+        function loadVideoFromId(videoId) {
+            currentVideoId = videoId;
+            const iframe = document.getElementById('youtubePlayer');
+            iframe.src = `https://www.youtube.com/embed/${videoId}?enablejsapi=1&origin=${window.location.origin}`;
+            
+            // Configurar API de YouTube
+            if (typeof YT !== 'undefined' && YT.Player) {
+                setupYouTubePlayer();
+            } else {
+                // Cargar API de YouTube si no está disponible
+                const tag = document.createElement('script');
+                tag.src = 'https://www.youtube.com/iframe_api';
+                const firstScriptTag = document.getElementsByTagName('script')[0];
+                firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+                
+                window.onYouTubeIframeAPIReady = function() {
+                    setupYouTubePlayer();
+                };
+            }
+        }
+
+        function setupYouTubePlayer() {
+            if (player) {
+                player.destroy();
+            }
+            
+            player = new YT.Player('youtubePlayer', {
+                height: '100%',
+                width: '100%',
+                videoId: currentVideoId,
+                playerVars: {
+                    'enablejsapi': 1,
+                    'origin': window.location.origin
+                },
+                events: {
+                    'onReady': onPlayerReady,
+                    'onStateChange': onPlayerStateChange
+                }
+            });
+        }
+
+        function onPlayerReady(event) {
+            console.log('YouTube Player listo');
+        }
+
+        function onPlayerStateChange(event) {
+            // Sincronizar estado con otros usuarios
+            if (event.data === YT.PlayerState.PLAYING) {
+                sendToAll({
+                    type: 'play'
+                });
+            } else if (event.data === YT.PlayerState.PAUSED) {
+                sendToAll({
+                    type: 'pause'
+                });
+            }
+        }
+
+        function playVideo() {
+            if (player && player.playVideo) {
+                player.playVideo();
+            }
+        }
+
+        function pauseVideo() {
+            if (player && player.pauseVideo) {
+                player.pauseVideo();
+            }
+        }
+
+        function syncVideo() {
+            if (player && player.getCurrentTime) {
+                const currentTime = player.getCurrentTime();
+                sendToAll({
+                    type: 'sync',
+                    time: currentTime
+                });
+            }
+        }
+
+        function syncVideoToTime(time) {
+            if (player && player.seekTo) {
+                player.seekTo(time, true);
+            }
+        }
+
+        function sendToAll(data) {
+            connections.forEach(conn => {
+                if (conn.open) {
+                    conn.send(data);
+                }
+            });
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            
+            if (message) {
+                addChatMessage('Tú', message, true);
+                sendToAll({
+                    type: 'chat',
+                    sender: 'Usuario',
+                    message: message
+                });
+                input.value = '';
+            }
+        }
+
+        function handleChatKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        function addChatMessage(sender, message, isOwn) {
+            const chatMessages = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isOwn ? 'own' : 'other'}`;
+            
+            messageDiv.innerHTML = `
+                <div class="sender">${sender}</div>
+                <div>${message}</div>
+            `;
+            
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Función para conectar a una sala existente
+        function joinRoom(roomId) {
+            if (peer && peer.open) {
+                const conn = peer.connect(roomId);
+                setupConnection(conn);
+                updateParticipants();
+            }
+        }
+
+        // Exponer función globalmente para debugging
+        window.joinRoom = joinRoom;
+        window.peer = peer;
+    </script>
+</body>
+</html>
